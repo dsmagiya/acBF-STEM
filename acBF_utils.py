@@ -154,6 +154,8 @@ def acBF_STEM(tcBF, upscale, ctf):
 
         tr = np.hypot(*kxy) * ctf.wavelength
         az = np.arctan2(kxy[1], kxy[0])
+
+        # H. Rose 1976
         ctf_t = 0.5j * (
             ctf.evaluate_aperture(*coords_t)
             * np.exp(-1.0j * (ctf.evaluate_chi(*coords_t) - ctf.evaluate_chi(tr, az)))
