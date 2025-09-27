@@ -10,7 +10,9 @@ CIF file(s) to reproduce Figure 4 and 7 are included in folder "CIFs".
 ## Author 
 Desheng Ma (dm852@cornell.edu)
 Steven E Zeltamnn (steven.zeltmann@cornell.edu)
+
 Developed at the Muller Group, Cornell University.
 
 ## Acknowledgement 
-py4DSTEM 
+- [tcBF-STEM](https://github.com/yyu2017/tcBFSTEM)  
+- [py4DSTEM](https://github.com/py4dstem/py4DSTEM)
