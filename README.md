@@ -10,7 +10,7 @@ CIF file(s) to reproduce Figure 4 and 7 are included in folder "CIFs".
 
 ## Author 
 Desheng Ma (dm852@cornell.edu)
-Steven E Zeltamnn (steven.zeltmann@cornell.edu)
+Steven E Zeltmann (steven.zeltmann@cornell.edu)
 
 Developed at the Muller Group, Cornell University.
 
