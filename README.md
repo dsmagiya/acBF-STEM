@@ -15,6 +15,9 @@ Steven E Zeltmann (steven.zeltmann@cornell.edu)
 
 Developed at the Muller Group, Cornell University.
 
+### Dependencies:
+- py4DSTEM 0.14.8
+- abTEM-legacy 1.0.0.b34
 ## Acknowledgement 
 - [tcBF-STEM](https://github.com/yyu2017/tcBFSTEM)  
 - [py4DSTEM](https://github.com/py4dstem/py4DSTEM)
