@@ -154,13 +154,12 @@ def acBF_STEM(tcBF, upscale, ctf):
 
         tr = np.hypot(*kxy) * ctf.wavelength
         az = np.arctan2(kxy[1], kxy[0])
+
         # corrected Rose Ultramic 1977, Eq 33 (see Ma et al arXiv preprint arXiv:2510.01493.):
         ctf_t = 0.5j * (
             ctf.evaluate_aperture(coords_mt[0],coords_mt[1]+np.pi) * np.exp(-1.0j * (ctf.evaluate_chi(tr,az)-ctf.evaluate_chi(coords_mt[0],coords_mt[1]+np.pi)  ))
             - ctf.evaluate_aperture(coords_t[0],coords_t[1]) * np.exp(1.0j * (ctf.evaluate_chi(tr,az)-ctf.evaluate_chi(coords_t[0],coords_t[1])))
         ) 
-        mask = np.logical_or(ctf.evaluate_aperture(*coords_t), ctf.evaluate_aperture(*coords_mt))
-        
         ctf_t = -np.conj(ctf_t)
         mask = np.logical_or(
             ctf.evaluate_aperture(*coords_t), ctf.evaluate_aperture(*coords_mt)
