@@ -6,7 +6,7 @@ The repository hosts the code for aberration-corrected bright-field (acBF-STEM) 
 **Major Dependencies:**
 - python 3.11
 - py4DSTEM 0.14.17
-- abTEM <= 1.0.0.b34
+- abTEM legacy <= 1.0.0.b34
 - (Optional) Cupy for GPU support
 
 ### 1. Get the acBF code from GitHub
