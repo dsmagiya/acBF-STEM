@@ -1,0 +1,16 @@
+# Directories that don't need to backup
+__pycache__
+*.sqlite3
+data/
+output/
+
+# setuptools build artifacts
+build/
+dist/
+*.egg-info/
+
+# Ignore Sphinx build artifacts
+docs/_build/
+docs/_autosummary/
+docs/.doctrees/
+docs/.ipynb_checkpoints/

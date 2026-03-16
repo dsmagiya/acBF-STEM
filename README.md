@@ -1,11 +1,42 @@
 # acBF-aberration-corrected-bright-field-STEM
 The repository hosts the code for aberration-corrected bright-field (acBF-STEM) imaging and python scripts to reproduce figures in manuscripts [1][2].
 
-Start with acBF_walkthrough.ipynb, which reproduces Figure 5 of [2] (data source: https://doi.org/10.5281/zenodo.15283331).
+## Installation guide
+
+**Major Dependencies:**
+- python 3.11
+- py4DSTEM 0.14.17
+- abTEM <= 1.0.0.b34
+- (Optional) Cupy for GPU support
+
+### 1. Get the acBF code from GitHub
+You can either download the repository as a .zip file and extract it, or use the following command if you have `git` installed.
+
+```bash
+git clone https://github.com/dsmagiya/acBF-STEM
+```
+
+### 2. Create and Activate the Python Environment
+Assuming you're using conda, you can create an independent environment and install the packages with these commands:
+
+```bash
+# Enter the commands one by one
+conda create -n acbf python=3.11 -y
+conda activate acbf
+conda install -c conda-forge cudatoolkit=11.8 cudnn=8.1 cupy numpy==1.26.4
+conda install abtem==1.0.0b34 py4DSTEM==0.14.17 jupyter
+```
+
+## Get Started
+
+Start with `acBF_walkthrough.ipynb`, which reproduces Figure 5 of [2] (data source: https://doi.org/10.5281/zenodo.15283331).
 
 This acBF code uses py4DSTEM as a preparatory step to estiamte the shifts and the aberration function.
 
 CIF file(s) to reproduce Figure 11 of [1], Figure 4 and 7 of [2] are included in folder "CIFs". 
+
+
+## Publications
 
 [1] Ma, D., Li, G., Muller, D. A., & Zeltmann, S. E. (2025). Information in 4D-STEM: Where it is, and How to Use it. arXiv preprint arXiv:2507.21034.
 
@@ -19,9 +50,7 @@ Steven E Zeltmann (steven.zeltmann@cornell.edu)
 
 Developed at the Muller Group, Cornell University.
 
-### Dependencies:
-- py4DSTEM 0.14.8
-- abTEM-legacy 1.0.0.b34
+
 ## Acknowledgement 
 - [tcBF-STEM](https://github.com/yyu2017/tcBFSTEM)  
 - [py4DSTEM](https://github.com/py4dstem/py4DSTEM)
