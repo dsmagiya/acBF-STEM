@@ -1,6 +1,10 @@
 # acBF-aberration-corrected-bright-field-STEM
 The repository hosts the code for aberration-corrected bright-field (acBF-STEM) imaging and python scripts to reproduce figures in manuscripts [1][2].
 
+## --News--
+A GPU-acclerated implementation is available now: https://github.com/chiahao3/fast-acbf by Chia-Hao Lee, for future integration with the PtyRAD (https://github.com/chiahao3/ptyrad) ptychographic reconstruction framework. 
+
+
 ## Installation guide
 
 **Major Dependencies:**
