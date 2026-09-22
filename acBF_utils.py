@@ -1,4 +1,3 @@
-from rigidregistration import stackregistration as stackreg
 import math
 import py4DSTEM
 import numpy as np
@@ -131,11 +130,32 @@ def d_chi_d_q(self, alpha, phi):
 
 ##
 ##
-def acBF_STEM(tcBF, upscale, ctf):
+def acBF_STEM(tcBF, upscale, ctf, *, return_complex=False,
+              regularization=1e-3, support_threshold=1e-6):
+    """Return tcBF, sign-corrected tcBF, and phase-only acBF.
+
+    With return_complex=True, append the real image from complex inversion.
+    In this package's notation, the regularized Fourier estimate is
+    sum(conj(ctf_t) * F) / (sum(abs(ctf_t)**2) + regularization * CTF_ref),
+    where F and ctf_t have the same shift correction. CTF_ref is the lower
+    median of positive transfer power (matching fast-acbf's torch.median).
+    Frequencies below support_threshold * CTF_ref are set to zero.
+    Complex inversion corrects amplitude and phase; its scale differs from
+    the phase-only sum. Defaults match fast-acbf's inversion settings.
+    """
+    if not np.isfinite(regularization) or regularization < 0:
+        raise ValueError("regularization must be finite and non-negative")
+    if not np.isfinite(support_threshold) or support_threshold < 0:
+        raise ValueError("support_threshold must be finite and non-negative")
     im_stack = stack_expand(tcBF._stack_BF_unshifted, upscale)
-    tcBF_orig = np.zeros_like(im_stack[0])
-    tcBF_corr = np.zeros_like(im_stack[0])
-    acBF = np.zeros_like(im_stack[0])
+    F_tcBF = np.zeros(im_stack[0].shape, dtype=np.complex128)
+    F_acBF = np.zeros_like(F_tcBF)
+    if return_complex:
+        F_acBF_complex = np.zeros_like(F_tcBF)
+        CTF_power = np.zeros(im_stack[0].shape, dtype=np.float64)
+    # Fourier indices for the Hermitian projection FFT(real(iFFT(F))).
+    neg_x = (-np.arange(im_stack.shape[1])) % im_stack.shape[1]
+    neg_y = (-np.arange(im_stack.shape[2])) % im_stack.shape[2]
     CTF_mean = np.zeros(im_stack[0].shape,dtype=np.complex128)
 
     R = np.array(
@@ -166,25 +186,50 @@ def acBF_STEM(tcBF, upscale, ctf):
         )
         # triple_overlap = np.logical_and(ctf.evaluate_aperture(*coords_t), ctf.evaluate_aperture(*coords_mt))
 
-        qxqy = abtem.utils.spatial_frequencies([img.shape[0]],[tcBF._scan_sampling[0]/upscale,])[0]
+        qx, qy = abtem.utils.spatial_frequencies(
+            img.shape, tuple(x / upscale for x in tcBF._scan_sampling)
+        )
         dx, dy = d_chi_d_q(ctf, tr, az)
-        shift_op = np.exp(-2.0j * np.pi * ((dx * qxqy[:, None]) + (dy * qxqy[None, :])))
-        ctf_t *= shift_op
+        shift_op = np.exp(-2.0j * np.pi * (dx * qx[:, None] + dy * qy[None, :]))
+        ctf_t = np.asarray(ctf_t * shift_op).reshape(img.shape)
 
-        # tcBF shift correction
-        F = np.fft.fft2(np.real(np.fft.ifft2(np.fft.fft2(img) * shift_op)))
-        CTF_mean += np.fft.fftshift(ctf_t)
-        tcBF_orig += np.real(np.fft.ifft2(F))
+        F = np.fft.fft2(img) * shift_op
+        # Linearity: sum_k real(iFFT(F_k)) = real(iFFT(sum_k F_k)).
+        # Sum the shifted slice spectra first, then use one iFFT after the
+        # loop rather than one iFFT for every detector slice.
+        F_tcBF += F
+        CTF_mean += ctf_t
 
-        ## acBF ctf correction
-        F *= np.exp(-1.0j * np.angle(ctf_t))
+        if return_complex:
+            # Matched-filter inversion as in fast-acbf, using this package's
+            # forward-transfer convention: conjugate(ctf_t) corrects phase.
+            # Apply the same shift to data and transfer, so it cancels in
+            # conjugate(ctf_t) * F. Accumulate before dividing by CTF power.
+            F_acBF_complex += np.conj(ctf_t) * F
+            CTF_power += np.abs(ctf_t)**2
 
-        apply_wiener = False
-        epsilon = 2e-2
-        if apply_wiener:  #Optional Wiener reweighting
-            abs_ctf = np.abs(ctf_t)
-            F *= abs_ctf / (abs_ctf**2 + epsilon**2)
-        acBF += np.real(np.fft.ifft2(F))
-    # tcBF sign correction
-    tcBF_corr = np.real(np.fft.ifft2(np.fft.fft2(tcBF_orig)*np.sign(np.real(np.fft.fftshift(CTF_mean)))))
-    return tcBF_orig, tcBF_corr, acBF
+        # Preserve the old phase-only path's real-image projection without
+        # its iFFT/FFT round trip (including Nyquist bins for even shapes).
+        F_real = 0.5 * (F + np.conj(F[np.ix_(neg_x, neg_y)]))
+        F_acBF += F_real * np.exp(-1.0j * np.angle(ctf_t))
+
+    tcBF_orig = np.real(np.fft.ifft2(F_tcBF))
+    F_tcBF_real = 0.5 * (F_tcBF + np.conj(F_tcBF[np.ix_(neg_x, neg_y)]))
+    # CTF_mean stays in native FFT order, including for odd-sized images.
+    tcBF_corr = np.real(np.fft.ifft2(F_tcBF_real * np.sign(np.real(CTF_mean))))
+    acBF = np.real(np.fft.ifft2(F_acBF))
+    if not return_complex:
+        return tcBF_orig, tcBF_corr, acBF
+
+    positive_power = CTF_power[CTF_power > 0]
+    if positive_power.size:
+        median_index = (positive_power.size - 1) // 2
+        CTF_ref = np.partition(positive_power, median_index)[median_index]
+    else:
+        CTF_ref = 1.0
+    support = CTF_power > support_threshold * CTF_ref
+    denominator = CTF_power + regularization * CTF_ref
+    F_inverted = np.zeros_like(F_acBF_complex)
+    np.divide(F_acBF_complex, denominator, out=F_inverted, where=support)
+    acBF_complex = np.real(np.fft.ifft2(F_inverted))
+    return tcBF_orig, tcBF_corr, acBF, acBF_complex
